@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="Main Build Script" default="help" xmlns="http://nant.sourceforge.net/release/0.92/nant.xsd">
+    <property name="Path.Root" value="${project::get-base-directory()}\..\.." />
+    <include buildfile="${Path.Root}\Database\Local.Properties.build"/>
+    
+    <property name="Path.Tools" value="${Path.Root}\Database\Build\Tools" />
+    <property name="Output.Test" value="${Path.Root}\Database\Build\Test" />
+	
+    <property name="Database.Test" value="${Database.DataSource.Local}_unittest" />
+    <property name="Database.Connection.String" value="MultipleActiveResultSets=true;Data Source=${Database.Server.Local};User Id=${Database.User.Local};Password=${Database.Password.Local};Database=" />
+    <property name="Database.Connection.String.Master" value="${Database.Connection.String}master" />	
+    <property name="Database.Connection.String.Main" value="${Database.Connection.String + Database.DataSource.Local}" />
+	
+	<property name="Database.Connection.String.Staging" value="MultipleActiveResultSets=true;Data Source=${Database.Server.Staging};User Id=${Database.User.Staging};Password=${Database.Password.Staging};Database=" />
+    <property name="Database.Connection.String.Master.Staging" value="${Database.Connection.String.Staging}master" />	
+    <property name="Database.Connection.String.Main.Staging" value="${Database.Connection.String.Staging + Database.DataSource.Staging}" />
+
+    <property name="Project.Web.Folder" value="${Path.Root}\Frontend\${Project.Name}.Web" />
+    <property name="Project.Test.Folder" value="${Path.Root}\Frontend\${Project.Name}.Test" />
+    <property name="Database.Folder" value="${Path.Root}\Database" />
+    <property name="Baselines.Database.Folder" value="${Database.Folder}\Baselines" />
+    <property name="Upgrades.Database.Folder" value="${Database.Folder}\Upgrades" />
+
+    <property name="Solution.Filename" value="${Path.Root}\Frontend\${Project.Name}.sln" />
+    <property name="Recreate.Template.File" value="${Database.Folder}\Recreate_Template.sql" />
+    <property name="Upgrades.Template.File" value="${Database.Folder}\Upgrade_Template.sql" />
+    <property name="Upgrades.Template.NoTransaction.File" value="${Database.Folder}\Upgrade_Template.NoTransaction.sql" />
+
+    <loadtasks path="${Path.Tools}\NAnt.Tasks\Release" /> 
+
+	<target name="help">
+        <echo message="---------------------------------------------------------------------------------"/>
+        <echo message="---------------------------------------------------------------------------------"/>
+		<echo message="		                 									${Project.Name} - BUILD HELP" />
+        <echo message="---------------------------------------------------------------------------------"/>
+        <echo message="---------------------------------------------------------------------------------"/>
+		<echo message="" />
+        <echo message="Usage:          build 'target' "/>
+        <echo message="For Example:    build all "/>
+        <echo message=""/>
+        <echo message="The following targets are available:"/>
+        <echo message="---------------------------------------------------------------------------------"/>
+        <echo message="all"/>
+        <echo message="---"/>
+        <echo message=""/>
+        <echo message="		Run all target 'source', 'unit.test' in sequence " />
+        <echo message=""/>
+        <echo message="---------------------------------------------------------------------------------"/>
+        <echo message="package"/>
+        <echo message="---"/>
+        <echo message=""/>
+        <echo message="		Get packages for projects							   " />
+        <echo message=""/>
+        <echo message="---------------------------------------------------------------------------------"/>
+        <echo message="source"/>
+        <echo message="---"/>
+        <echo message=""/>
+        <echo message="		Build the solution										   " />
+        <echo message=""/>
+        <echo message="---------------------------------------------------------------------------------"/>
+        <echo message="unit.test"/>
+        <echo message="---"/>
+        <echo message=""/>
+        <echo message="		Run the unit tests										   " />
+        <echo message=""/>
+        <echo message="---------------------------------------------------------------------------------"/>
+        <echo message="db.new"/>
+        <echo message="---"/>
+        <echo message=""/>
+        <echo message="		Only run init scripts for empty database (Database must exists) " />
+        <echo message=""/>
+        <echo message="---------------------------------------------------------------------------------"/>
+        <echo message="db.upgrade.local"/>
+        <echo message="---"/>
+        <echo message=""/>
+        <echo message="		Only run upgrade scripts for database						   " />
+        <echo message=""/>
+		<echo message="---------------------------------------------------------------------------------"/>
+        <echo message="db.upgrade.staging"/>
+        <echo message="---"/>
+        <echo message=""/>
+        <echo message="		Only run upgrade scripts for database						   " />
+        <echo message=""/>
+	</target>
+	
+    <target name="all">
+        <call target="package" />
+        <call target="source" />
+        <call target="unit.test" />
+    </target>
+	
+	<target name="package">
+        <echo message="-------------------- GET PACKAGES --------------------" />
+		<foreach item="Folder" property="Project.Name">
+			<in>
+				<items>
+					<include name="../Frontend/${Project.Name}.*" />
+				</items>
+			</in>
+			<do>
+				<echo message="--- Getting packages for ${Project.Name} ---" />
+				<exec program="NuGet">
+					<arg value="install"/>
+					<arg value="${Project.Name}/packages.config"/>
+					<arg value="-o"/>
+					<arg value="Packages"/>			
+				</exec>
+			</do>
+		</foreach>
+	</target>
+
+    <target name="source">
+        <echo message="-------------------- BUILD SOURCE --------------------" />
+        <msbuild project="${Solution.Filename}">
+            <arg value="/verbosity:m" />
+            <property name="Configuration" value="Debug" />
+        </msbuild>
+    </target>
+
+    <target name="unit.test">
+        <echo message="-------------------- RUN UNIT TESTS --------------------" />
+        <nunit2 failonerror="true">
+            <formatter type="Xml" usefile="true" extension=".xml" outputdir="${Output.Test}\results" />
+            <test>
+                <assemblies>
+                    <include name="${Output.Test}\*Test.dll" />
+                </assemblies>
+            </test>
+        </nunit2>
+    </target>
+
+    <target name="db.new">
+        <property name="Database.Type" value="MAIN - ${Database.DataSource.Local}" />
+        <property name="Database.Name" value="${Database.DataSource.Local}" />
+        <property name="Database.Connection.String.Executing" value="${Database.Connection.String.Main}" />
+        <call target="db.new.executing" />
+    </target>
+
+    <target name="db.new.executing">
+        <echo message="-------------------- NEW DATABASE - ${Database.Type} ON ${Database.Server.Local} --------------------" />
+        <foreach item="File" property="Database.Script" in="${Baselines.Database.Folder}\">
+            <do>
+                <echo message="Script file: ${Database.Script}" />
+                <sql
+					connstring="Provider=SQLNCLI10;${Database.Connection.String.Executing}"
+					delimiter="GO"
+					delimstyle="Line"
+					transaction="false"
+					print="true"
+					source="${Database.Script}"
+					batch="false"
+				/>
+            </do>
+        </foreach>
+    </target>
+
+    <target name="db.upgrade.local">
+        <property name="Database.Connection.String.Executing" value="${Database.Connection.String.Main}" />
+        <property name="Database.Type" value="MAIN - ${Database.DataSource.Local}" />
+		<property name="Database.Server" value="${Database.Server.Local}" />
+        <call target="db.upgrade.executing" />
+    </target>
+	
+	<target name="db.upgrade.staging">
+        <property name="Database.Connection.String.Executing" value="${Database.Connection.String.Main.Staging}" />
+        <property name="Database.Type" value="MAIN - ${Database.DataSource.Staging}" />
+		<property name="Database.Server" value="${Database.Server.Staging}" />
+        <call target="db.upgrade.executing" />
+    </target>
+
+    <target name="db.upgrade.test">
+        <property name="Database.Connection.String.Executing" value="${Database.Connection.String.Test}" />
+        <property name="Database.Type" value="TEST - ${Database.Test}" />
+        <call target="db.upgrade.executing" />
+    </target>
+
+    <target name="db.upgrade.executing">
+        <fileset id="Database.Upgrade.Scripts" />
+
+        <!-- Figure out which scripts to run -->
+        <DBGetUpgradeScripts
+            ConnectionString="${Database.Connection.String.Executing}"
+            UpgradeScriptsFolder="${Upgrades.Database.Folder}\"
+            OutputFileSetId="Database.Upgrade.Scripts"
+		/>
+
+        <echo message="-------------------- UPGRADE DATABASE - ${Database.Type} ON ${Database.Server} --------------------" />
+        <foreach item="File" property="Database.Script">
+            <in>
+                <items refid="Database.Upgrade.Scripts"/>
+            </in>
+            <do>
+                <echo message="Script file: ${Database.Script}" />
+                <property name="Script.File.Name" value="${path::get-file-name(Database.Script)}" />
+                <loadfile file="${Database.Script}" property="Database.Script.Source" />
+                <choose>
+                    <!-- If the file contains .notransaction.sql, it will be execute under no transaction. Otherwise, it's still. -->
+                    <when test="${string::ends-with(Script.File.Name, '.notransaction.sql') == true}">
+                        <copy file="${Upgrades.Template.NoTransaction.File}" tofile="parsed_sql_script.sql" overwrite="true" outputencoding="unicode">
+                            <filterchain>
+                                <replacetokens>
+                                    <token key="SCRIPT_CONTENT" value="${Database.Script.Source}" />
+                                    <token key="MAJOR" value="${string::substring(Script.File.Name,8, 2)}" />
+                                    <token key="MINOR" value="${string::substring(Script.File.Name,11, 2)}" />
+                                    <token key="BUILD" value="${string::substring(Script.File.Name,14, 2)}" />
+                                    <token key="REVISION" value="${string::substring(Script.File.Name,17, 3)}" />
+                                    <token key="SCRIPT_NAME" value="${Script.File.Name}" />
+                                </replacetokens>
+                            </filterchain>
+                        </copy>
+                    </when>
+                    <otherwise>
+                        <copy file="${Upgrades.Template.File}" tofile="parsed_sql_script.sql" overwrite="true" outputencoding="unicode">
+                            <filterchain>
+                                <replacetokens>
+                                    <token key="SCRIPT_CONTENT" value="${Database.Script.Source}" />
+                                    <token key="MAJOR" value="${string::substring(Script.File.Name,8, 2)}" />
+                                    <token key="MINOR" value="${string::substring(Script.File.Name,11, 2)}" />
+                                    <token key="BUILD" value="${string::substring(Script.File.Name,14, 2)}" />
+                                    <token key="REVISION" value="${string::substring(Script.File.Name,17, 3)}" />
+                                    <token key="SCRIPT_NAME" value="${Script.File.Name}" />
+                                </replacetokens>
+                            </filterchain>
+                        </copy>
+                    </otherwise>
+                </choose>
+                <sql
+                    connstring="Provider=SQLNCLI10;${Database.Connection.String.Executing}"
+                    delimiter="GO"
+                    delimstyle="Line"
+                    transaction="false"
+                    print="true"
+                    source="parsed_sql_script.sql"
+                    batch="false"
+				/>
+            </do>
+        </foreach>
+
+        <delete file="parsed_sql_script.sql" />
+    </target>
+</project>

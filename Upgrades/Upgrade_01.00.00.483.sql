@@ -1,0 +1,13 @@
+--INSERT INTO #Description VALUES (' Alter table AnalysisDangerProbability - add column Sort')
+--GO
+
+--IF NOT EXISTS (
+--  SELECT 1 
+--  FROM   sys.columns 
+--  WHERE  object_id = OBJECT_ID(N'[Risk].[AnalysisDangerProbability]') 
+--         AND name = 'Sort'
+--)
+-- BEGIN
+--	  ALTER TABLE [Risk].[AnalysisDangerProbability] ADD Sort INT NULL
+-- END
+-- GO

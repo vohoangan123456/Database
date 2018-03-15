@@ -1,0 +1,43 @@
+--INSERT INTO #Description VALUES ('Predefined causes order - Risk Management')
+--GO
+
+--IF OBJECT_ID('[Risk].[GetDangerCauses]', 'p') IS NULL
+--    EXEC ('CREATE PROCEDURE [Risk].[GetDangerCauses] AS SELECT 1')
+--GO
+--ALTER PROCEDURE [Risk].[GetDangerCauses]
+--(
+--	@DangerId INT,
+--	@Language INT
+--)
+--AS
+--BEGIN
+--	SET NOCOUNT ON;
+
+--    SELECT adp.Id, adp.AnalysisDangerId, adp.ProbabilityId, 
+--    adp.ReevaluatedProbabilityId, adp.Name, adp.[Description],
+--    Risk.GetProbabilityName(adp.ProbabilityId, @Language) AS Probability,
+--    Risk.GetProbabilityName(adp.ReevaluatedProbabilityId, @Language) AS ReevaluatedProbability,
+--    ISNULL(adp.Sort,0) AS Sort
+--    FROM Risk.AnalysisDangerProbability adp
+--    WHERE adp.AnalysisDangerId = @DangerId
+--    ORDER BY adp.Sort
+--END
+--GO
+
+--IF OBJECT_ID('[Risk].[UpdateDangerProbabilityOrder]', 'p') IS NULL
+--    EXEC ('CREATE PROCEDURE [Risk].[UpdateDangerProbabilityOrder] AS SELECT 1')
+--GO
+--ALTER PROCEDURE [Risk].[UpdateDangerProbabilityOrder]
+--(
+--	@AnalysisDangerId INT,
+--	@DangerProbabilities AS [dbo].[MenuSortOrder] READONLY
+--)
+--AS
+--BEGIN
+--	UPDATE p
+--    SET p.Sort = i.SortOrder
+--    FROM Risk.AnalysisDangerProbability p
+--    JOIN @DangerProbabilities i ON i.Id = p.Id
+--    WHERE P.AnalysisDangerId = @AnalysisDangerId
+--END
+--GO

@@ -1,0 +1,42 @@
+----- THIS IS THE DEVELOPMENT GUIDE FOR *handbook frontend* PROJECT -----
+
+*Any line have the structure -- abc -- means that it's the description (without -- -- )*
+
+1. Copy the "Local.Properties.Build.Template" and remove ".Template" to "Local.Properties.Build" file.
+
+2. Edit "Local.Properties.Build" file, with the following information:
+
+	<!-- Needed to run the UpgradeDb_local.bat -->
+    <property name="Database.Server.Local" value="-- Database Server Address (ex: localhost) --" />
+    <property name="Database.DataSource.Local" value="-- Database name to work with (ex: mydatabase) --" />
+    <property name="Database.User.Local" value="-- User id has the full right on Database Server (ex: sa) --" />
+    <property name="Database.Password.Local" value="-- Password of above user --" />
+	
+	<!-- Needed to run the UpgradeDb_staging.bat -->
+	<property name="Database.Server.Staging" value="" />
+    <property name="Database.DataSource.Staging" value="" />
+    <property name="Database.User.Staging" value="" />
+    <property name="Database.Password.Staging" value="" />
+	
+3. In "Build" folder, open "Command prompt", you have multiple commands to run
+
+	build db.upgrade.local		: Upgrade the database with latest schemas.
+	build db.upgrade.staging	: Upgrade the database on staging server with latest schemas.
+	build unit.tests			: Run the unit tests (if any)
+	build source				: Build the solution (similar to Build solution in VS)
+	build all					: Run combination of "config", "source", "unit.tests"
+	build						: Display above instructions.
+	
+	- For the optimistic case, you should see BUILD SUCCEEDED at the end of build command.
+		
+4. Upgrade script
+	- Any upgrade in database should be added in Database\Upgrades\Upgrade_01.00.00.xxx.sql (with xxx is the latest number + 1)
+	- The structure of the upgrade script must follow this template:	
+		INSERT INTO #Description VALUES('-- Upgrade Script Description --')
+			GO
+			-- Script content --
+	- After a sprint or phrase, we should add all the script to Upgrade_01.00.01.000.sql and make it to baseline script, and next upgrade script should be named Upgrade_01.00.01.xxx.sql (with xxx is start from 1 and is the lastest number + 1)
+
+5.	Upgrade database
+	-We can upgrade database by follow the instructions in [3]
+	-The other way is run UpgradeDb_local.bat to upgrade local databse and Upgrade_staging.bat to upgrade server staging database

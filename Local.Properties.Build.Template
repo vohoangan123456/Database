@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="Local Properties" default="all" xmlns="http://nant.sourceforge.net/release/0.91/nant.xsd">
+    <property name="Framework.Path" value="C:\Windows\Microsoft.NET\Framework\v4.0.30319" />
+	
+    <property name="Database.DataSource" value="" />
+    <property name="Database.Main" value="" />
+    <property name="Database.User" value="" />
+    <property name="Database.Password" value="" />
+	
+	<!-- Start: Fix for this project -->
+	
+	<property name="Project.Name" value="Pro5" />
+	
+	<!-- Generate at http://aspnetresources.com/tools/machineKey -->
+	<property name="Machine.Validation.Key" value="3B68880504E6C587AF4F82F4A7D5DA8EB82355DB0D49427942A9871D7A9B61A932FDD0A2E578C504EC5203F262AAB80600620957F9C5293BAB0974406B107D97" />
+	<property name="Machine.Decryption.Key" value="1B5F585CD1CD395D7DCA207113D6F1D92552A6D0A27E5C7AD63EBFFA6EE97A99" />
+		
+	<!-- End: Fix for this project -->
+</project>

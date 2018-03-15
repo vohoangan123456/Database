@@ -1,0 +1,17 @@
+Buildfile: file:///D:/NetPower Projects/Handbook/Database/Build/main.build
+Target framework: Microsoft .NET Framework 4.0
+Target(s) specified: db.upgrade.local 
+
+[loadtasks] Scanning directory "D:\NetPower Projects\Handbook\Database\Build\Tools\NAnt.Tasks\Release" for extension assemblies.
+
+db.upgrade.local:
+
+
+db.upgrade.executing:
+
+     [echo] -------------------- UPGRADE DATABASE - MAIN - Ehandbok ON .\MSSQLSERVER1 --------------------
+
+BUILD SUCCEEDED
+
+Total time: 0.2 seconds.
+
